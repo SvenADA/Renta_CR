@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo noupdate="1">
+    <!-- Categories -->
+    <record id="hr_salary_rule_category_hr_salary_rule_category_basic" model="hr.salary.rule.category">
+        <field name="name">Básico</field>
+        <field name="code">BASIC</field>
+    </record>
+    <record id="hr_salary_rule_category_alw" model="hr.salary.rule.category">
+        <field name="name">Subsidio</field>
+        <field name="code">ALW</field>
+    </record>
+    <record id="hr_salary_rule_category_hr_salary_rule_category_bruto" model="hr.salary.rule.category">
+        <field name="name">Bruto</field>
+        <field name="code">GROSS</field>
+    </record>
+    <record id="hr_salary_rule_category_deduction" model="hr.salary.rule.category">
+        <field name="name">Deducción</field>
+        <field name="code">DED</field>
+    </record>
+    <record id="hr_salary_rule_category_netsa" model="hr.salary.rule.category">
+        <field name="name">Neto</field>
+        <field name="code">NET</field>
+    </record>
+    <record id="hr_salary_rule_category_company" model="hr.salary.rule.category">
+        <field name="name">Parte de la empresa</field>
+        <field name="code">COMP</field>
+    </record>
+    <record id="hr_salary_rule_category_asociacion_solidarista" model="hr.salary.rule.category">
+        <field name="name">ASOCIACIÓN SOLIDARISTA</field>
+        <field name="code">ASE</field>
+    </record>
+    <record id="hr_salary_rule_category_netsa" model="hr.salary.rule.category">
+        <field name="name">Salario neto</field>
+        <field name="code">NETSA</field>
+    </record>
+    <record id="hr_salary_rule_category_other" model="hr.salary.rule.category">
+        <field name="name">Other Deductions</field>
+        <field name="code">OTHER</field>
+    </record>
+    <record id="hr_salary_rule_category_info" model="hr.salary.rule.category">
+        <field name="name">Informativo</field>
+        <field name="code">INFO</field>
+    </record>
+    <record id="hr_salary_rule_category_totals" model="hr.salary.rule.category">
+        <field name="name">Totals</field>
+        <field name="code">TOTALS</field>
+    </record>
+</odoo>

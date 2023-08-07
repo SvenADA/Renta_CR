@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo noupdate="1">
+    <!--Tipos de entrada de trabajo-->
+    <record id="work_entry_type_paid_time" model="hr.work.entry.type">
+        <field name="name">Ausencia pagada</field>
+        <field name="code">LEAVE100</field>
+        <field name="sequence">25</field>
+        <field name="is_leave">True</field>
+        <field name="is_unforeseen">True</field>
+        <field name="color">5</field>
+    </record>
+    <record id="work_entry_type_unpaid_time" model="hr.work.entry.type">
+        <field name="name">Ausencia no pagada</field>
+        <field name="code">LEAVE90</field>
+        <field name="sequence">25</field>
+        <field name="is_leave">True</field>
+        <field name="is_unforeseen">True</field>
+        <field name="color">5</field>
+    </record>
+    <record id="work_entry_type_inability" model="hr.work.entry.type">
+        <field name="name">Incapacidad</field>
+        <field name="code">LEAVE110</field>
+        <field name="sequence">25</field>
+        <field name="is_leave">True</field>
+        <field name="is_unforeseen">True</field>
+        <field name="color">5</field>
+    </record>
+    <record id="work_entry_type_vacations" model="hr.work.entry.type">
+        <field name="name">Vacaciones</field>
+        <field name="code">LEAVE120</field>
+        <field name="sequence">25</field>
+        <field name="is_leave">True</field>
+        <field name="is_unforeseen">False</field>
+        <field name="color">5</field>
+    </record>
+    <record id="work_entry_type_holiday" model="hr.work.entry.type">
+        <field name="name">Feriado</field>
+        <field name="code">FERIADO</field>
+        <field name="sequence">25</field>
+        <field name="is_leave">False</field>
+        <field name="is_unforeseen">False</field>
+        <field name="color">5</field>
+    </record>
+
+    <!--Tipos de ausencia-->
+    <record id="inc_ccss" model="hr.leave.type">
+        <field name="name" eval="'Incapacidad CCSS'" />
+        <field name="allocation_type">no</field>
+        <field name="color_name">black</field>
+        <field name="validity_start" eval="time.strftime('%Y-01-01')" />
+        <field name="work_entry_type_id" ref="work_entry_type_sick_leave_inc_ccss" />
+        <field name="l10n_cr_edi_payslip_use_calendar_days">True</field>
+        <field name="unpaid">True</field>
+    </record>
+    <record id="inv_ins" model="hr.leave.type">
+        <field name="name" eval="'Incapacidad INS'" />
+        <field name="allocation_type">no</field>
+        <field name="color_name">black</field>
+        <field name="validity_start" eval="time.strftime('%Y-01-01')" />
+        <field name="work_entry_type_id" ref="hr_work_entry_contract.work_entry_type_sick_leave" />
+        <field name="l10n_cr_edi_payslip_use_calendar_days">True</field>
+        <field name="unpaid">True</field>
+    </record>
+    <record id="maternity" model="hr.leave.type">
+        <field name="name" eval="'Licencia Maternidad'" />
+        <field name="allocation_type">no</field>
+        <field name="color_name">black</field>
+        <field name="validity_start" eval="time.strftime('%Y-01-01')" />
+        <field name="work_entry_type_id" ref="work_entry_type_sick_leave_maternity" />
+        <field name="l10n_cr_edi_payslip_use_calendar_days">True</field>
+        <field name="unpaid">True</field>
+    </record>
+    <record id="paternity" model="hr.leave.type">
+        <field name="name" eval="'Licencia Paternidad'" />
+        <field name="allocation_type">no</field>
+        <field name="color_name">black</field>
+        <field name="validity_start" eval="time.strftime('%Y-01-01')" />
+        <field name="work_entry_type_id" ref="work_entry_type_sick_leave_paternity" />
+        <field name="l10n_cr_edi_payslip_use_calendar_days">True</field>
+        <field name="unpaid">True</field>
+    </record>
+    <record id="holidays" model="hr.leave.type">
+        <field name="name" eval="'Vacaciones'" />
+        <field name="allocation_type">fixed_allocation</field>
+        <field name="color_name">lightcyan</field>
+        <field name="validity_start" eval="time.strftime('%Y-01-01')" />
+        <field name="work_entry_type_id" ref="hr_work_entry_contract.work_entry_type_legal_leave" />
+    </record>
+    <record id="permiso" model="hr.leave.type">
+        <field name="name" eval="'Permiso con goce'" />
+        <field name="allocation_type">no</field>
+        <field name="color_name">brown</field>
+        <field name="validity_start" eval="time.strftime('%Y-01-01')" />
+        <field name="work_entry_type_id" ref="hr_work_entry_contract.work_entry_type_leave" />
+    </record>
+    <record id="permiso_no_pago" model="hr.leave.type">
+        <field name="name" eval="'Permiso sin goce'" />
+        <field name="allocation_type">no</field>
+        <field name="color_name">brown</field>
+        <field name="validity_start" eval="time.strftime('%Y-01-01')" />
+        <field name="work_entry_type_id" ref="hr_work_entry_contract.work_entry_type_leave" />
+    </record>
+    <record id="permiso_especial" model="hr.leave.type">
+        <field name="name" eval="'Permiso especial 7756'" />
+        <field name="allocation_type">no</field>
+        <field name="color_name">lightblue</field>
+        <field name="validity_start" eval="time.strftime('%Y-01-01')" />
+        <field name="work_entry_type_id" ref="hr_work_entry_contract.work_entry_type_leave" />
+    </record>
+    <record id="birthday" model="hr.leave.type">
+        <field name="name" eval="'Cumpleaños'" />
+        <field name="allocation_type">fixed</field>
+        <field name="color_name">lightblue</field>
+        <field name="validity_start" eval="time.strftime('%Y-01-01')" />
+        <field name="work_entry_type_id" ref="hr_work_entry_contract.work_entry_type_leave" />
+    </record>
+    <record id="family_member" model="hr.leave.type">
+        <field name="name" eval="'Ausencia por fallecimiento de familiar'" />
+        <field name="allocation_type">no</field>
+        <field name="color_name">lightblue</field>
+        <field name="validity_start" eval="time.strftime('%Y-01-01')" />
+        <field name="work_entry_type_id" ref="hr_work_entry_contract.work_entry_type_leave" />
+    </record>
+</odoo>

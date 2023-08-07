@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <!-- Perceptions -->
+    <record id="hr_rule_l10n_cr_payroll_liquidation_aguinaldo" model="hr.salary.rule">
+        <field name="name">Aguinaldo</field>
+        <field name="sequence" eval="1000" />
+        <field name="code">SAC</field>
+        <field name="category_id" ref="hr_salary_rule_category_hr_salary_rule_category_bruto" />
+        <field name="struct_id" ref="payroll_structure_data_l10n_cr_liquidation" />
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">
+result = inputs.sac and inputs.sac.amount or 0
+# December 1th from the last year
+date = payslip.date_from.replace(payslip.date_from.year-1, month=12, day=1)
+payslips = employee.slip_ids.filtered(
+    lambda sl: sl.state == 'done'
+    and sl.id != payslip.id
+    and sl.date_from &gt;= date
+    and sl.date_from &lt;= payslip.date_from)
+lines = payslips.mapped('line_ids')
+result += abs(sum(lines.filtered(lambda li: li.salary_rule_id.code == "AGUINALDO").mapped('total')))
+        </field>
+    </record>
+    <record id="hr_rule_l10n_cr_payroll_liquidation_holidays" model="hr.salary.rule">
+        <field name="name">Vacaciones</field>
+        <field name="sequence" eval="2000" />
+        <field name="code">VACPROP</field>
+        <field name="category_id" ref="hr_salary_rule_category_hr_salary_rule_category_bruto" />
+        <field name="struct_id" ref="payroll_structure_data_l10n_cr_liquidation" />
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">
+result = inputs.vacprop and inputs.vacprop.amount or 0
+holidays_days = employee.env.ref('l10n_cr_hr_payroll.holidays').with_context(employee_id=employee.id).remaining_leaves
+result += holidays_days * contract.l10n_cr_edi_daily_wage
+        </field>
+    </record>
+    <record id="hr_rule_l10n_cr_payroll_liquidation_preaviso" model="hr.salary.rule">
+        <field name="name">Preaviso</field>
+        <field name="sequence" eval="3000" />
+        <field name="code">PREAVISO</field>
+        <field name="category_id" ref="hr_salary_rule_category_hr_salary_rule_category_bruto" />
+        <field name="struct_id" ref="payroll_structure_data_l10n_cr_liquidation" />
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">
+result = inputs.preaviso and inputs.preaviso.amount or 0
+daily_salary = payslip.dict._get_daily_salary_devengado(payslip.dict)
+
+if payslip.dict.l10n_cr_notice_resignation_type == 'days_to_pay':
+    result += payslip.dict.l10n_cr_notice_resignation_pending_days * daily_salary
+
+elif payslip.dict.l10n_cr_notice_resignation_type == 'to_pay':
+    seniority = contract.get_seniority(contract.date_start, contract.date_end, 'a')
+    preaviso_days = 0
+    if 3 &lt;= seniority['months'] &lt;= 5:
+        preaviso_days = 7
+    elif 6 &lt;= seniority['months'] &lt;= 11:
+        preaviso_days = 15
+    elif seniority['years']:
+        preaviso_days = 30
+
+    result += preaviso_days * daily_salary
+        </field>
+    </record>
+    <record id="hr_rule_l10n_cr_payroll_net_salary_liquidation" model="hr.salary.rule">
+        <field name="name">Neto a Pagar</field>
+        <field name="sequence" eval="100000" />
+        <field name="code">NET</field>
+        <field name="category_id" ref="hr_salary_rule_category_netsa" />
+        <field name="struct_id" ref="payroll_structure_data_l10n_cr_liquidation" />
+        <field name="amount_select">code</field>
+        <field name="amount_python_compute">
+result = SAC + VACPROP + PREAVISO
+        </field>
+    </record>
+</odoo>
