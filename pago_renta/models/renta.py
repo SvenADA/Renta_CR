@@ -3,6 +3,9 @@
 from odoo import _,fields, models, api, tools
 from odoo.exceptions import ValidationError
 from datetime import datetime
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class Renta(models.Model):
     _inherit = 'hr.contract'
@@ -54,24 +57,28 @@ class HrPayslip(models.Model):
 
     # ______________________BOTÓN CALCULAR RENTA EN RECIBO DE SALARIO_________________________#
 
+    @api.model
     def action_calculate_rent(self):
         day_slip = int(self.date_to.strftime('%d'))
         month_slip = int(self.date_to.strftime('%m'))
 
         for rec in self:
-            employee = rec.employee_id.name
             net_salary = rec.salario_devengado
             xmas_wage = rec.aguinaldo
             struct = rec.struct_id.name
-            recordUpdate = rec.env['hr.contract'].search([('employee_id', '=', employee)])
-
-            record_leave = rec.env['hr.leave'].search([('employee_id', '=', employee), ('date_to', '>=', self.date_to)])
-            print(record_leave.exists())
+            
+            recordUpdate = rec.env['hr.contract'].search([('employee_id', '=', rec.employee_id.id)])
+            module = self.env['ir.module.module'].search([('name', '=', 'hr.leave')], limit=1)
+            
+            if module and module.state == 'installed':
+                record_leave = self.env['hr.leave'].search([('employee_id', '=', rec.employee_id.id), ('date_to', '>=', self.date_end)])
+            else:
+                record_leave = None
 
         if not record_leave:
             recordUpdate.write({"inabilty_days": 0})
 
-        if record_leave.exists() and recordUpdate.exists():
+        if record_leave and recordUpdate:
             month_start = int(record_leave.date_from.strftime('%m'))
             month_to = int(record_leave.date_to.strftime('%m'))
             day_start = int(record_leave.date_from.strftime('%d'))
@@ -186,13 +193,18 @@ class HrPayslipBatch(models.Model):
         list = self.env['hr.payslip'].search([('date_to', '=', self.date_end)])
 
         for rec in list:
-            employee = rec.employee_id.name
             net_salary = rec.salario_devengado
             xmas_wage = rec.aguinaldo
             days_inability = rec.dias_de_incapacidad
             struct = rec.struct_id.name
-            recordUpdate = rec.env['hr.contract'].search([('employee_id', '=', employee)])
-            record_leave = rec.env['hr.leave'].search([('employee_id', '=', employee), ('date_to', '>=', self.date_end)])
+            
+            recordUpdate = self.env['hr.contract'].search([('employee_id', '=', rec.employee_id.id)])
+            module = self.env['ir.module.module'].search([('name', '=', 'hr.leave')], limit=1)
+            
+            if module and module.state == 'installed':
+                record_leave = self.env['hr.leave'].search([('employee_id', '=', rec.employee_id.id), ('date_to', '>=', self.date_end)])
+            else:
+                record_leave = None
 
             if struct == "Comisiones":
                 if recordUpdate.exists():
@@ -200,13 +212,13 @@ class HrPayslipBatch(models.Model):
                     recordUpdate.write({"commission": net_salary})
 
             if struct == "Costa Rica":
-                if recordUpdate.exists():
+                if recordUpdate:
                     recordUpdate.write({"xmas_bonus": xmas_wage + recordUpdate.xmas_bonus})
 
                     if not record_leave:
                         recordUpdate.write({"inabilty_days": 0})
 
-                    if record_leave.exists():
+                    if record_leave:
                         month_start = int(record_leave.date_from.strftime('%m'))
                         month_to = int(record_leave.date_to.strftime('%m'))
                         day_start = int(record_leave.date_from.strftime('%d'))
@@ -223,29 +235,18 @@ class HrPayslipBatch(models.Model):
                             recordUpdate.write({"inabilty_days": days_inability})
 
                     if day_slip > 11 and day_slip < 20:
-                        recordUpdate.write({"first_wage": net_salary})
-                        title = _("Renta calculada")
-                        message = _("Los datos han sido guardados en el contrato de los empleados")
-                        return {
-                            'type': 'ir.actions.client',
-                            'tag': 'display_notification',
-                            'params': {
-                                'title': title,
-                                'message': message,
-                                'sticky': False,
-                            }
-                        }
+                        recordUpdate.first_wage = net_salary
                     if day_slip > 26 and day_slip <= 31:
-                        recordUpdate.write({"second_wage": net_salary})
-                        title = _("Renta calculada")
-                        message = _("Los datos han sido guardados en el contrato de los empleados")
-                        return {
-                            'type': 'ir.actions.client',
-                            'tag': 'display_notification',
-                            'params': {
-                                'title': title,
-                                'message': message,
-                                'sticky': False,
-                            }
-                        }
-
+                        recordUpdate.second_wage = net_salary
+        
+        title = _("Renta calculada")
+        message = _("Los datos han sido guardados en el contrato de los empleados")
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': title,
+                'message': message,
+                'sticky': False,
+            }
+        }
