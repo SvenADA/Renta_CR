@@ -20,6 +20,7 @@ class Renta(models.Model):
 
 class HrPayslip(models.Model):
     _inherit = "hr.payslip"
+    # test
 
     salario_devengado = fields.Monetary(compute='_compute_rent')
     asociacion_colaborador = fields.Monetary(compute='_compute_aso_colaborador')
@@ -57,23 +58,19 @@ class HrPayslip(models.Model):
 
     # ______________________BOTÓN CALCULAR RENTA EN RECIBO DE SALARIO_________________________#
 
-    @api.model
+    def action_payslip_done(self):
+        self.action_calculate_rent()
+        return super(HrPayslip, self).action_payslip_done()
+        
     def action_calculate_rent(self):
         day_slip = int(self.date_to.strftime('%d'))
         month_slip = int(self.date_to.strftime('%m'))
-
-        for rec in self:
-            net_salary = rec.salario_devengado
-            xmas_wage = rec.aguinaldo
-            struct = rec.struct_id.name
-            
-            recordUpdate = rec.env['hr.contract'].search([('employee_id', '=', rec.employee_id.id)])
-            module = self.env['ir.module.module'].search([('name', '=', 'hr.leave')], limit=1)
-            
-            if module and module.state == 'installed':
-                record_leave = self.env['hr.leave'].search([('employee_id', '=', rec.employee_id.id), ('date_to', '>=', self.date_end)])
-            else:
-                record_leave = None
+        employee = self.employee_id.id
+        net_salary = self.salario_devengado
+        xmas_wage = self.aguinaldo
+        struct = self.struct_id.name
+        recordUpdate = self.env['hr.contract'].search([('employee_id', '=' , employee)])
+        record_leave = self.env['hr.leave'].search([('employee_id', '=', employee), ('date_to', '>=', self.date_to)])
 
         if not record_leave:
             recordUpdate.write({"inabilty_days": 0})
@@ -98,16 +95,15 @@ class HrPayslip(models.Model):
                 recordUpdate.write({"inabilty_days": days})
 
         # ________________Cálculo de renta en la estructura comisiones_________________#
+
         if struct == "Comisiones":
-            if recordUpdate.exists():
+            if recordUpdate:
                 recordUpdate.write({"commission": net_salary})
-                recordUpdate.write({"xmas_bonus": xmas_wage + recordUpdate.xmas_bonus})
 
         # ________________Cálculo de renta en la estructura de planilla normal_________________#
-        if struct == "Costa Rica":
-            if recordUpdate.exists():
-                recordUpdate.write({"xmas_bonus": xmas_wage + recordUpdate.xmas_bonus})
-
+        if recordUpdate:
+            recordUpdate.xmas_bonus = xmas_wage + recordUpdate.xmas_bonus
+            if struct == "Costa Rica":
                 if day_slip > 11 and day_slip < 20:
                     recordUpdate.write({"first_wage": net_salary})
                     title = _("Renta calculada")
@@ -154,7 +150,7 @@ class HrPayslip(models.Model):
             recordUpdate = rec.env['hr.contract'].search([('employee_id', '=', employee)])
 
             if day > 11 and day < 20:
-                if recordUpdate.exists():
+                if recordUpdate:
                     recordUpdate.write({"first_wage": net_salary})
                     title = _("Renta calculada")
                     message = _("Los datos han sido guardados en el contrato del empleado")
@@ -168,7 +164,7 @@ class HrPayslip(models.Model):
                         }
                     }
             if day > 26 and day <= 31:
-                if recordUpdate.exists():
+                if recordUpdate:
                     recordUpdate.write({"second_wage": net_salary})
                     title = _("Renta calculada")
                     message = _("Los datos han sido guardados en el contrato del empleado")
@@ -185,36 +181,41 @@ class HrPayslip(models.Model):
 class HrPayslipBatch(models.Model):
     _inherit = "hr.payslip.run"
 
+    is_xmas_bonus = fields.Boolean("Décimotercer mes")
+
     # ______________________BOTÓN CALCULAR RENTA EN LOTES_________________________#
 
+    def action_paid(self):
+        self.action_calculate_rent_batch()
+        return super(HrPayslipBatch, self).action_paid()
+        
     def action_calculate_rent_batch(self):
         day_slip = int(self.date_end.strftime('%d'))
         month_slip = int(self.date_end.strftime('%m'))
         list = self.env['hr.payslip'].search([('date_to', '=', self.date_end)])
 
         for rec in list:
+            employee = rec.employee_id.id
             net_salary = rec.salario_devengado
             xmas_wage = rec.aguinaldo
             days_inability = rec.dias_de_incapacidad
             struct = rec.struct_id.name
-            
-            recordUpdate = self.env['hr.contract'].search([('employee_id', '=', rec.employee_id.id)])
-            module = self.env['ir.module.module'].search([('name', '=', 'hr.leave')], limit=1)
-            
-            if module and module.state == 'installed':
-                record_leave = self.env['hr.leave'].search([('employee_id', '=', rec.employee_id.id), ('date_to', '>=', self.date_end)])
-            else:
-                record_leave = None
+            recordUpdate = rec.env['hr.contract'].search([('employee_id', '=', employee)])
+            record_leave = rec.env['hr.leave'].search([('employee_id', '=', employee), ('date_to', '>=', self.date_end)])
 
+            recordUpdate.write({"xmas_bonus": xmas_wage + recordUpdate.xmas_bonus})
+            
             if struct == "Comisiones":
-                if recordUpdate.exists():
-                    recordUpdate.write({"xmas_bonus": xmas_wage + recordUpdate.xmas_bonus})
-                    recordUpdate.write({"commission": net_salary})
-
-            if struct == "Costa Rica":
                 if recordUpdate:
-                    recordUpdate.write({"xmas_bonus": xmas_wage + recordUpdate.xmas_bonus})
+                    recordUpdate.write({"commission": net_salary})
+            
+            if is_xmas_bonus:
+                if recordUpdate:
+                    recordUpdate.write({"xmas_bonus": 0})            
 
+            if recordUpdate:
+                recordUpdate.write({"xmas_bonus": xmas_wage + recordUpdate.xmas_bonus})
+                if struct == "Costa Rica":
                     if not record_leave:
                         recordUpdate.write({"inabilty_days": 0})
 
@@ -235,18 +236,20 @@ class HrPayslipBatch(models.Model):
                             recordUpdate.write({"inabilty_days": days_inability})
 
                     if day_slip > 11 and day_slip < 20:
-                        recordUpdate.first_wage = net_salary
+                        recordUpdate.write({"first_wage": net_salary})
+
                     if day_slip > 26 and day_slip <= 31:
-                        recordUpdate.second_wage = net_salary
-        
-        title = _("Renta calculada")
-        message = _("Los datos han sido guardados en el contrato de los empleados")
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': title,
-                'message': message,
-                'sticky': False,
+                        recordUpdate.write({"second_wage": net_salary})
+                        
+            title = _("Renta calculada")
+            message = _("Los datos han sido guardados en el contrato de los empleados")
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': title,
+                    'message': message,
+                    'sticky': False,
+                }
             }
-        }
+
